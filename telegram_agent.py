@@ -4,6 +4,7 @@ import dbfile as db
 from telethon import TelegramClient
 from search import lexemes, induction
 import re
+import asyncio
 
 db.create_tables()
 
@@ -67,3 +68,5 @@ async def send_all_files():
                                        linkfile,
                                        caption=caption(file)
                                        )
+
+asyncio.run(client_start())
