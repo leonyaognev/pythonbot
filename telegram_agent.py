@@ -45,7 +45,7 @@ async def client_start():
     client = TelegramClient(entity, api_id, api_hash)
     await client.connect()
     if not await client.is_user_authorized():
-        # await client.send_code_request(phone)
+        await client.send_code_request(phone)
         await client.sign_in(phone, input('Enter code: '))
     await client.start()
     return client
@@ -53,20 +53,21 @@ async def client_start():
 
 def caption(name):
     name = name.split('.')
-    name = name[0].split()
+    name = name[0].split('_')
     name[0] = name[0].replace('_', ' ')
-    return name[0] + ' сезон: ' + name[1] + 'серия: ' + name[2]
+    return name[0] + ' сезон: ' + name[1] + ' серия: ' + name[2]
 
 
 async def send_all_files():
     client = await client_start()
     for channel_name in listdir('files'):
         channel = await create_channel(client, channel_name)
-        for file in sorted(listdir('files/' + channel_name)):
-            linkfile = 'files/' + channel_name + '/' + file
-            await client.send_file(channel.linkchanel,
-                                   linkfile,
-                                   caption=caption(file)
-                                   )
-
-asyncio.run(send_all_files())
+        for sesons in range(len(listdir(f'files/{channel_name}'))):
+            for file in range(len(listdir(f'files/{channel_name}/{sesons+1}'))):
+                linkfile = f'files/{channel_name}/{sesons +
+                                                   1}/{channel_name}_{sesons+1}_{file+1}.mp4'
+                await client.send_file(channel.linkchanel,
+                                       linkfile,
+                                       caption=caption(
+                                           f'{channel_name}_{sesons+1}_{file+1}.mp4')
+                                       )
