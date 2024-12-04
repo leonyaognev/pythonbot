@@ -4,9 +4,9 @@ import os
 def rename(file_name):
     os.system("mv ~/Downloads/downloads/* ~/Documents/pythonbot/files/")
     for serial in os.listdir('files'):
+        print(serial)
         os.system(
-            f'mv ~/Documents/pythonbot/files/{serial} \
-                    ~/Documents/pythonbot/files/{file_name}')
+            f'mv ~/Documents/pythonbot/files/{serial} ~/Documents/pythonbot/files/{file_name}')
         for index, seson in enumerate(sorted(os.listdir(f'files/{file_name}'))):
             for i, s in enumerate(sorted(os.listdir(f'files/{file_name}/{seson}'))):
                 os.system(f'mv ~/Documents/pythonbot/files/{file_name}/{seson}/{
