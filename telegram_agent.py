@@ -3,7 +3,7 @@ from os import listdir
 import dbfile as db
 from telethon import TelegramClient
 from search import lexemes, induction
-import asyncio
+import re
 
 db.create_tables()
 
@@ -14,22 +14,15 @@ async def create_channel(client, file_data):
     file_data[0] = file_data[0].replace('_', ' ')
     chanel = db.ChanelService().add(file_data[0])
     if chanel:
-        await client(
+        result = await client(
             CreateChannelRequest(
                 chanel.chanelname,
                 chanel.descrchanel,
                 megagroup=False
             )
         )
-        checkUsernameResult = await client(
-            CheckUsernameRequest(
-                chanel.chanelname, chanel.linkchanel)
-        )
-        if checkUsernameResult:
-            await client(
-                UpdateUsernameRequest(
-                    chanel.chanelname, chanel.linkchanel)
-            )
+        channel = result.chats[0]
+        db.ChanelService().update_link(channel.id, chanel.id)
         # induction:
         lexemes_list = lexemes(chanel.chanelname)
         induction(lexemes_list, chanel.id)
@@ -54,8 +47,13 @@ async def client_start():
 def caption(name):
     name = name.split('.')
     name = name[0].split('_')
-    name[0] = name[0].replace('_', ' ')
+    name[0] = name[0].replace('-', ' ')
     return name[0] + ' сезон: ' + name[1] + ' серия: ' + name[2]
+
+
+def extract_numbers(file_name):
+    match = re.search(r'_(\d+)_(\d+)', file_name)
+    return int(match.group(1)), int(match.group(2))
 
 
 async def send_all_files():
@@ -63,11 +61,9 @@ async def send_all_files():
     for channel_name in listdir('files'):
         channel = await create_channel(client, channel_name)
         for sesons in range(len(listdir(f'files/{channel_name}'))):
-            for file in range(len(listdir(f'files/{channel_name}/{sesons+1}'))):
-                linkfile = f'files/{channel_name}/{sesons +
-                                                   1}/{channel_name}_{sesons+1}_{file+1}.mp4'
+            for file in sorted(listdir(f'files/{channel_name}/{sesons+1}'), key=extract_numbers):
+                linkfile = f'files/{channel_name}/{sesons + 1}/{file}'
                 await client.send_file(channel.linkchanel,
                                        linkfile,
-                                       caption=caption(
-                                           f'{channel_name}_{sesons+1}_{file+1}.mp4')
+                                       caption=caption(file)
                                        )

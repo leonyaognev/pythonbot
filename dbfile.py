@@ -11,7 +11,7 @@ def create_tables():
             id integer primary key,
             chanelname text unique,
             descrchanel text unique,
-            linkchanel text unique
+            linkchanel text integer
             )
     '''
     con.execute(sql)
@@ -30,22 +30,18 @@ class Chanel:
 class ChanelService:
     def add(self, file_data):
         SQL_INSERT = """
-            INSERT INTO chanels (chanelname, descrchanel, linkchanel)
-            VALUES (?, ?, ?)
+            INSERT INTO chanels (chanelname, descrchanel)
+            VALUES (?, ?)
         """
         if self.get_by_chanelname(file_data):
             return 0
 
-        letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        text = [choice(letters) for i in range(16)]
-
-        linkchanel = ''.join(text)
         namechanel = file_data
         descrchanel = 'все серии' + file_data + '''только в нашем канале!!!!\n
             еще больше контента в нашем боте @leognburs'''
 
         con = sqlite3.connect(DB_FILE_PATH)
-        con.execute(SQL_INSERT, [namechanel, descrchanel, linkchanel])
+        con.execute(SQL_INSERT, [namechanel, descrchanel])
         con.commit()
         return self.get_by_chanelname(file_data)
 
@@ -67,3 +63,11 @@ class ChanelService:
         if file_data:
             return file_data[0]
         return None
+
+    def update_link(self, id, channel_id):
+        print(id, channel_id)
+        SQL = f"UPDATE chanels SET linkchanel = {
+            id} WHERE id = {channel_id}"
+        con = sqlite3.connect(DB_FILE_PATH)
+        con.execute(SQL)
+        con.commit()

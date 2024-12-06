@@ -28,8 +28,7 @@ def handle_document(message):
         with open(f"torrents/{message.document.file_name}", 'wb') as new_file:
             new_file.write(downloaded_file)
         bot.reply_to(message, "Файл загружен!")
-        io.run(download())
-        print('penis')
+        # io.run(download())
         bot.reply_to(message, "торрент скачен")
         rename(message.document.file_name.split('.')[0])
         bot.reply_to(message, "файл подкотовлен к выгрузке на сервер")
