@@ -1,8 +1,9 @@
+from rename import rename
 import os
 import asyncio
 import qbittorrent as qbt
 import time
-
+import asyncio as io
 
 FINISHED_TORRENTS_FILE_NAME = ".finished-torrents.txt"
 DOWNLOADS_DIR_NAME = "downloads"
@@ -70,7 +71,7 @@ def download_torrent(filepath: str, outdir: str) -> str:
     return torrent['content_path']
 
 
-async def download() -> None:
+async def download(massage) -> None:
     """ Main entry point """
     init()
 
@@ -81,7 +82,7 @@ async def download() -> None:
     torrent_files = [f for f in os.listdir(
         TORRENT_FILES_DIR_NAME) if f not in finished_torrent_filepaths]
     if len(torrent_files) == 0:
-        print(f"Нет файлов на скачивание.")
+        print("Нет файлов на скачивание.")
         return
 
     print("\n==== Очередь на скачивание ====")
@@ -97,3 +98,7 @@ async def download() -> None:
         finished_torrents_list_file.write(torrent_file)
         finished_torrents_list_file.close()
     print("Все торренты из спика успешно загружены.")
+
+    while len(os.listdir('/home/ognev/Documents/pythonbot/files/')) == 0:
+        print(os.listdir('files'))
+        rename(massage)

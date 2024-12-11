@@ -1,5 +1,4 @@
 import sqlite3
-from random import choice
 
 DB_FILE_PATH = 'database/data.db'
 
@@ -10,7 +9,6 @@ def create_tables():
         create table if not exists chanels (
             id integer primary key,
             chanelname text unique,
-            descrchanel text unique,
             linkchanel text integer
             )
     '''
@@ -20,28 +18,25 @@ def create_tables():
 
 
 class Chanel:
-    def __init__(self, id, chanelname, descrchanel, linkchanel):
+    def __init__(self, id, chanelname, linkchanel):
         self.id = id
         self.chanelname = chanelname
-        self.descrchanel = descrchanel
         self.linkchanel = linkchanel
 
 
 class ChanelService:
     def add(self, file_data):
         SQL_INSERT = """
-            INSERT INTO chanels (chanelname, descrchanel)
-            VALUES (?, ?)
+            INSERT INTO chanels (chanelname)
+            VALUES (?)
         """
         if self.get_by_chanelname(file_data):
             return 0
 
         namechanel = file_data
-        descrchanel = 'все серии' + file_data + '''только в нашем канале!!!!\n
-            еще больше контента в нашем боте @leognburs'''
 
         con = sqlite3.connect(DB_FILE_PATH)
-        con.execute(SQL_INSERT, [namechanel, descrchanel])
+        con.execute(SQL_INSERT, [namechanel])
         con.commit()
         return self.get_by_chanelname(file_data)
 

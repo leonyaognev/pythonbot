@@ -1,10 +1,12 @@
 from telethon.tl.functions.channels import InviteToChannelRequest, CreateChannelRequest, CheckUsernameRequest, UpdateUsernameRequest
-from os import listdir
+from os import system, listdir
 import dbfile as db
 from telethon import TelegramClient
 from search import lexemes, induction
 import re
-import asyncio
+import asyncio as io
+import time
+import sqlite3
 
 db.create_tables()
 
@@ -17,8 +19,8 @@ async def create_channel(client, file_data):
     if chanel:
         result = await client(
             CreateChannelRequest(
-                chanel.chanelname,
-                chanel.descrchanel,
+                chanel.chanelname.replace('-', ' '),
+                'больше контента в нашем боте @leognburs_bot',
                 megagroup=False
             )
         )
@@ -39,7 +41,7 @@ async def client_start():
     client = TelegramClient(entity, api_id, api_hash)
     await client.connect()
     if not await client.is_user_authorized():
-        await client.send_code_request(phone)
+        # await client.send_code_request(phone)
         await client.sign_in(phone, input('Enter code: '))
     await client.start()
     return client
@@ -68,5 +70,5 @@ async def send_all_files():
                                        linkfile,
                                        caption=caption(file)
                                        )
-
-asyncio.run(client_start())
+        system(f'rm -rf /home/ognev/Documents/pythonbot/files/{channel_name}')
+    await client.disconnect()
