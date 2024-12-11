@@ -1,12 +1,10 @@
-from telethon.tl.functions.channels import InviteToChannelRequest, CreateChannelRequest, CheckUsernameRequest, UpdateUsernameRequest
+from telethon.tl.functions.channels import InviteToChannelRequest, CreateChannelRequest, CheckUsernameRequest, UpdateUsernameRequest, DeleteChannelRequest
+from telethon.tl.functions.messages import ExportChatInviteRequest
 from os import system, listdir
 import dbfile as db
 from telethon import TelegramClient
 from search import lexemes, induction
 import re
-import asyncio as io
-import time
-import sqlite3
 
 db.create_tables()
 
@@ -26,10 +24,12 @@ async def create_channel(client, file_data):
         )
         channel = result.chats[0]
         db.ChanelService().update_link(channel.id, chanel.id)
+        invite_link = await client(ExportChatInviteRequest(channel.id))
+        db.ChanelService().update_inviteLink(
+            invite_link.__dict__['link'], chanel.id)
         # induction:
         lexemes_list = lexemes(chanel.chanelname)
         induction(lexemes_list, chanel.id)
-
     return db.ChanelService().get_by_chanelname(file_data[0])
 
 
@@ -66,9 +66,16 @@ async def send_all_files():
         for sesons in range(len(listdir(f'files/{channel_name}'))):
             for file in sorted(listdir(f'files/{channel_name}/{sesons+1}'), key=extract_numbers):
                 linkfile = f'files/{channel_name}/{sesons + 1}/{file}'
+                system(
+                    f'ffmpeg -i {linkfile} -ss 00:00:01 -vframes 1 -s 320x240 thumbnail.jpg')
                 await client.send_file(channel.linkchanel,
                                        linkfile,
-                                       caption=caption(file)
+                                       caption=caption(file),
+                                       supports_streaming=True,
+                                       video=True,
+                                       force_document=False,
+                                       thumb='thumbnail.jpg'
                                        )
+                system('rm -rf thumbnail.jpg')
         system(f'rm -rf /home/ognev/Documents/pythonbot/files/{channel_name}')
     await client.disconnect()

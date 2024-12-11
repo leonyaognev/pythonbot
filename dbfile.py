@@ -9,7 +9,8 @@ def create_tables():
         create table if not exists chanels (
             id integer primary key,
             chanelname text unique,
-            linkchanel text integer
+            linkchanel integer,
+            invitelink text
             )
     '''
     con.execute(sql)
@@ -18,10 +19,11 @@ def create_tables():
 
 
 class Chanel:
-    def __init__(self, id, chanelname, linkchanel):
+    def __init__(self, id, chanelname, linkchanel, invitelink):
         self.id = id
         self.chanelname = chanelname
         self.linkchanel = linkchanel
+        self.invitelink = invitelink
 
 
 class ChanelService:
@@ -50,19 +52,24 @@ class ChanelService:
         return None
 
     def get_link_by_id(self, id):
-        SQL_SELECT = "SELECT linkchanel FROM chanels WHERE id = ?"
+        SQL_SELECT = "SELECT invitelink FROM chanels WHERE id = ?"
         con = sqlite3.connect(DB_FILE_PATH)
         query = con.execute(SQL_SELECT, [id])
         file_data = query.fetchone()
-        print(file_data)
         if file_data:
             return file_data[0]
         return None
 
     def update_link(self, id, channel_id):
-        print(id, channel_id)
         SQL = f"UPDATE chanels SET linkchanel = {
             id} WHERE id = {channel_id}"
+        con = sqlite3.connect(DB_FILE_PATH)
+        con.execute(SQL)
+        con.commit()
+
+    def update_inviteLink(self, link, channel_id):
+        SQL = f"UPDATE chanels SET invitelink = '{link}' WHERE id = {
+            channel_id}"
         con = sqlite3.connect(DB_FILE_PATH)
         con.execute(SQL)
         con.commit()

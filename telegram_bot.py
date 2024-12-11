@@ -26,7 +26,7 @@ def search(message: Message):
         for link in links:
             bot.send_message(
                 message.chat.id,
-                f'@{link}'
+                f'{link}'
             )
     else:
         bot.send_message(

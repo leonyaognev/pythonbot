@@ -64,7 +64,7 @@ class Porter:
 
 def lexemes(file_name):
     lexemes = list()
-    file_name = file_name.split()
+    file_name = file_name.split('-')
     for word in file_name:
         word = transenru(word)
         try:
