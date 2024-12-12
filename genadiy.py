@@ -21,7 +21,24 @@ def handle_start(message):
     bot.send_message(message.chat.id, 'привееет!')
 
 
+'''
 @bot.message_handler(commands=['torrent_file'])
+def torrent_hendler(message):
+    pass
+
+
+def torrent_name(message, torrent_info):
+    pass
+
+
+def torrent_caption(message, torrent_info):
+    pass
+
+
+def torrent_cover(message, torrent_info):
+    pass
+
+
 def get_caption(message):
     global processing_command
 
@@ -35,10 +52,10 @@ def get_caption(message):
     processing_command = True
     bot.send_message(message.chat.id,
                      'отправьте подпись канала: ')
-    bot.register_next_step_handler(message, torrent_file)
+    bot.register_next_step_handler(message, torrent_file_zalupa)
 
 
-def torrent_file(message):
+def torrent_file_zalupa(message):
     with open('caption.json', 'r') as data:
         penis = js.load(data)
     channel_name = message.text.split()[0]
@@ -93,6 +110,7 @@ def handle_document(message: Message):
         processing_command = False
         bot.send_message(
             message.chat.id, "нет, ну ты блять ему говоришь 'СКИНЬ ТЫ, СУКА, ФАЙЛ' а он блять берет и какую то поеботу кидает. \n иди нахуй короче, ебанат блядский")
+'''
 
 
 @bot.message_handler(commands=['parse'])
@@ -133,38 +151,38 @@ def parse_get_name(message):
 
     bot.send_message(message.chat.id, "Отправьте описание канала:")
 
-    parse_info = {"channel_name": channel_name}
+    info = {"channel_name": channel_name}
 
-    bot.register_next_step_handler(message, parse_get_caption, parse_info)
+    bot.register_next_step_handler(message, parse_get_caption, info)
 
 
-def parse_get_caption(message, parse_info):
+def parse_get_caption(message, info):
     # Check for text
     if not message.text:
         bot.send_message(
             message.chat.id,
             "Пустое сообщение.\nОтправьте описание канала:"
         )
-        bot.register_next_step_handler(message, parse_get_caption, parse_info)
+        bot.register_next_step_handler(message, parse_get_caption, info)
         return
 
     # Extract channel caption and delete message
     channel_caption = message.text
-    parse_info["channel_caption"] = channel_caption
+    info["channel_caption"] = channel_caption
 
     # Next step
     bot.send_message(message.chat.id, "Отправьте аватарку канала:")
-    bot.register_next_step_handler(message, parse_get_cover, parse_info)
+    bot.register_next_step_handler(message, parse_get_cover, info)
 
 
-def parse_get_cover(message, parse_info):
+def parse_get_cover(message, info):
     # Check for document
     if not message.document:
         bot.send_message(
             message.chat.id,
             "Сообщение не содержит файла.\nОтправьте аватарку канала:"
         )
-        bot.register_next_step_handler(message, parse_get_cover, parse_info)
+        bot.register_next_step_handler(message, parse_get_cover, info)
         return
 
     # Extract channel cover
@@ -174,46 +192,125 @@ def parse_get_cover(message, parse_info):
 
     file_extension = message.document.file_name.split('.')[-1]
 
-    parse_info["channel_cover"] = channel_cover
-    parse_info["channel_cover_extension"] = file_extension
+    info["channel_cover"] = channel_cover
+    info["channel_cover_extension"] = file_extension
 
     # Next step
     bot.send_message(message.chat.id, "Отправьте ссылку на канал источник:")
 
     bot.register_next_step_handler(
-        message, parse_get_source_channel_link, parse_info)
+        message, parse_get_source_channel_link, info)
 
 
-def parse_get_source_channel_link(message, parse_info):
-    # Check for text
-    if not message.text:
+def parse_get_source_channel_link(message, info):
+    if message.text:
+        # Extract channel link
+        source_channel_link = message.text
+        info["source_channel_link"] = source_channel_link
+
+        # Next step
+        bot.send_message(message.chat.id, "Парсим канал...")
+        parse(message, info)
+
+    elif message.document:
+        # Extract torrent file
+        file_id = message.document.file_id
+        file_info = bot.get_file(file_id)
+        torrent_file = bot.download_file(file_info.file_path)
+
+        info["torrent_file"] = torrent_file
+        # Next step
+        bot.send_message(
+            message.chat.id,
+            "Отправьте номер сезона (если в файле сезонов больше одного отправьте 0):"
+        )
+
+        bot.register_next_step_handler(message, get_season_number,
+                                       info)
+
+    else:
         bot.send_message(
             message.chat.id,
             "Пустое сообщение.\nОтправьте ссылку на канал-источник:"
         )
         bot.register_next_step_handler(message, parse_get_source_channel_link,
-                                       parse_info)
+                                       info)
         return
 
-    # Extract channel link
-    source_channel_link = message.text
-    parse_info["source_channel_link"] = source_channel_link
+
+def get_season_number(message, info):
+    if not message.text or not message.text.isdigit():
+        bot.send_message(
+            message.chat.id,
+            "Пустое сообщение.\nОтправьте номер сезона:"
+        )
+        bot.register_next_step_handler(message, get_season_number,
+                                       info)
+        return
+
+    if int(message.text) < 0:
+        bot.send_messge(message.chat.id, 'номер сезон отрицательный')
+        bot.register_next_step_handler(message, get_season_number,
+                                       info)
+
+    # Extract season
+    info['season'] = message.text
 
     # Next step
-    bot.send_message(message.chat.id, "Парсим канал...")
-    parse(message, parse_info)
+    bot.send_message(message.chat.id, 'начинаю скачивание торрента...')
+    download_torrent(message, info)
 
 
-def parse(message, parse_info):
+def download_torrent(message, info):
     global processing_command
 
     try:
         # Download cover
-        cover_file_name = f"photo/{parse_info['channel_name']
-                                   }.{parse_info['channel_cover_extension']}"
+        cover_file_name = f"photo/{info['channel_name']
+                                   }.{info['channel_cover_extension']}"
 
         with open(cover_file_name, 'wb') as new_file:
-            new_file.write(parse_info["channel_cover"])
+            new_file.write(info["channel_cover"])
+
+        bot.send_message(message.chat.id, "Обложка загружена.")
+
+        # Save torrent
+        if int(info['season']):
+            with open(f"torrents/{info['season']} {info['channel_name']}", 'wb') as new_file:
+                new_file.write(info['torrent_file'])
+
+        else:
+            with open(f"torrents/{info['name']}", 'wb') as new_file:
+                new_file.write(info['torrent_file'])
+
+        bot.send_message(message.chat.id, "Торрент файл загружен")
+
+        # Save caption
+        with open('caption.json', 'r') as data:
+            penis = js.load(data)
+
+        if not (info["channel_name"] in info["channel_caption"]):
+            penis[info["channel_name"]] = info["channel_caption"]
+
+        with open('caption.json', 'w') as data:
+            js.dump(penis, data)
+
+    except Exception as e:
+        bot.reply_to(message, f"Ошибка:\n{e}")
+
+    processing_command = False
+
+
+def parse(message, info):
+    global processing_command
+
+    try:
+        # Download cover
+        cover_file_name = f"photo/{info['channel_name']
+                                   }.{info['channel_cover_extension']}"
+
+        with open(cover_file_name, 'wb') as new_file:
+            new_file.write(info["channel_cover"])
 
         bot.send_message(message.chat.id, "Обложка загружена.")
 
@@ -221,16 +318,16 @@ def parse(message, parse_info):
         with open('caption.json', 'r') as data:
             penis = js.load(data)
 
-        if not (parse_info["channel_name"] in parse_info["channel_caption"]):
-            penis[parse_info["channel_name"]] = parse_info["channel_caption"]
+        if not (info["channel_name"] in info["channel_caption"]):
+            penis[info["channel_name"]] = info["channel_caption"]
 
         with open('caption.json', 'w') as data:
             js.dump(penis, data)
 
         # Parse chat
         channel_id = io.run(parse_chats(
-            source_chat=parse_info["source_channel_link"],
-            channel_name=parse_info["channel_name"]
+            source_chat=info["source_channel_link"],
+            channel_name=info["channel_name"]
         ))
 
         bot.send_message(
@@ -264,15 +361,20 @@ def format_handler(message):
 def format(message):
     global processing_command
 
-    text = message.text.split()
-    res = io.run(rename_parsed_messages(int(text[0]), int(text[1]), *text[2:]))
-    if res:
-        bot.send_message(message.chat.id, 'хуй залупа все готово')
-    else:
-        bot.send_message(
-            message.chat.id, 'братан, чет поебота какая то, может ты чет не то скинул мне, ебанат?')
+    try:
+        text = message.text.split()
+        res = io.run(rename_parsed_messages(
+            int(text[0]), int(text[1]), *text[2:]))
+        if res:
+            bot.send_message(message.chat.id, 'хуй залупа все готово')
+        else:
+            bot.send_message(
+                message.chat.id, 'братан, чет поебота какая то, может ты чет не то скинул мне, ебанат?')
 
-    processing_command = False
+        processing_command = False
+    except Exception as e:
+        bot.send_message(message.chat.id, f'Ошибка: {e}')
+        processing_command = False
 
 
 @bot.message_handler(content_types=['text'])

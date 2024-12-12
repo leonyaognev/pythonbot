@@ -120,21 +120,31 @@ async def parse_chats(source_chat, channel_name):
 
 async def rename_parsed_messages(channel_id, seasons, *args):
     series = (0, *args)
-    series = [int(i) for i in series]
-    print(channel_id, seasons, series)
+
+    try:
+        series = [int(i) for i in series]
+    except Exception:
+        return False
+
     client = await client_start()
     channel = db.ChanelService().get_by_id(channel_id)
     messages = list()
+
     async for message in client.iter_messages(channel.linkchanel, reverse=True):
-        messages.append(message.id)
+        messages.append((message.id, message.text))
     messages = messages[2:]
 
     for seson in range(1, seasons+1):
-        for index, message in enumerate(messages[series[seson-1]:series[seson]]):
-            await client.edit_message(
-                channel.linkchanel,
-                message,
-                text=f'{channel.chanelname.replace("-", " ")} сезон: {seson} серия: {index+1}')
+        for index, message in enumerate(messages[series[0]:series[seson]]):
+            print(index, message)
+            new_text = f'{channel.chanelname.replace(
+                "-", " ")} сезон: {seson} серия: {index+1}'
+            if not (message[1] == new_text):
+                await client.edit_message(
+                    channel.linkchanel,
+                    message[0],
+                    text=new_text)
+        del messages[0:series[seson]]
 
     await client.disconnect()
     return True
