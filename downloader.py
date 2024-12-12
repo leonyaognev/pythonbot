@@ -99,6 +99,6 @@ async def download(massage) -> None:
         finished_torrents_list_file.close()
     print("Все торренты из спика успешно загружены.")
 
-    while len(os.listdir('/home/ognev/Documents/pythonbot/files/')) == 0:
-        print(os.listdir('files'))
-        rename(massage)
+    while len(os.listdir('/home/ognev/Documents/pythonbot/files/')) != 0:
+        pass
+    rename(massage)

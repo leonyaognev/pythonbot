@@ -39,4 +39,4 @@ def handle_document(message):
 
 
 print('сервер запущен')
-bot.polling(non_stop=True, interval=1)
+bot.polling(non_stop=True, interval=1, timeout=60, long_polling_timeout=60)
