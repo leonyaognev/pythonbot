@@ -11,7 +11,7 @@ from download_agent import DownloadAgent
 
 TOKEN = "7393701789:AAGI3lpBeQ3BpkAhjdmNjPWHE84HYDBpEjs"
 bot = telebot.TeleBot(TOKEN)
-albums = {}
+authorized_users = list()
 
 processing_command = False
 
@@ -21,100 +21,51 @@ def handle_start(message):
     bot.send_message(message.chat.id, 'привееет!')
 
 
-'''
-@bot.message_handler(commands=['torrent_file'])
-def torrent_hendler(message):
-    pass
-
-
-def torrent_name(message, torrent_info):
-    pass
-
-
-def torrent_caption(message, torrent_info):
-    pass
-
-
-def torrent_cover(message, torrent_info):
-    pass
-
-
-def get_caption(message):
-    global processing_command
-
-    if processing_command:
+@bot.message_handler(commands=['authorization'])
+def authorization_hendler(message):
+    if str(message.chat.id) in authorized_users:
         bot.send_message(
-            message.chat.id,
-            'Какая-то другая комманда уже в обработке.'
-        )
+            message.chat.id, 'ебанат, так ты же уже и так авторизован, \
+нахуй заново пытыешься \
+авторизоваться?\nебанат блять...')
+        return
+        bot.register_next_step_hendler(message, authorization_hendler)
+    bot.send_message(message.chat.id, 'введите пароль админа:')
+    bot.register_next_step_handler(message, check_authorization)
+
+
+def check_authorization(message):
+    if not message.text:
+        bot.send_message(
+            message.chat.id, 'извините, но вы отправили мне какую то поеботу, идите нахуй блять с такими преколоми, вы пидорас, я ваш рот ебал и мамашу вашу потрахивал смачнейше')
+    global authorized_users
+
+    password = message.text
+
+    if password == 'oralcumshot':
+        if not (str(message.chat.id) in authorized_users):
+            authorized_users.append(str(message.chat.id))
+
+            with open('authorized_users.json', 'w') as data:
+                js.dump(authorized_users, data)
+
+            bot.send_message(
+                message.chat.id, 'поздравляю, вы успешно авторизованы!')
+    else:
+        bot.send_message(message.chat.id, 'ага блять, так я теба и пропутил, \
+иди нахуй, сучка, мамаше там своей поплачь, я хз. \
+ах да, кстати, я ебал её вчера и сегодня \
+вечерком пару раз её выбe блять, сучка')
+
+
+@bot.message_handler(commands=['create_new_channel'])
+def create_handler(message):
+    global authorized_users
+    if not (str(message.chat.id) in authorized_users):
+        bot.send_message(
+            message.chat.id, 'ага блять, иди нахуй сука падаль неавторизованная')
         return
 
-    processing_command = True
-    bot.send_message(message.chat.id,
-                     'отправьте подпись канала: ')
-    bot.register_next_step_handler(message, torrent_file_zalupa)
-
-
-def torrent_file_zalupa(message):
-    with open('caption.json', 'r') as data:
-        penis = js.load(data)
-    channel_name = message.text.split()[0]
-    caption = ' '.join(message.text.split()[1:])
-    if not (channel_name in penis):
-        penis[channel_name] = caption
-    with open('caption.json', 'w') as data:
-        js.dump(penis, data)
-
-    bot.send_message(message.chat.id,
-                     'отправьте фото для будующей аватарки канала: ')
-    bot.register_next_step_handler(message, get_photo)
-
-
-def get_photo(message):
-    global processing_command
-
-    if message.caption and message.document:
-        file_id = message.document.file_id
-        file_info = bot.get_file(file_id)
-        downloaded_file = bot.download_file(file_info.file_path)
-        try:
-            with open(f"photo/{message.caption + '.' + message.document.file_name.split('.')[-1]}", 'wb') as new_file:
-                new_file.write(downloaded_file)
-            bot.reply_to(message, "Файл загружен!")
-            bot.send_message(message.chat.id, 'отправьте торрент файл: ')
-            bot.register_next_step_handler(message, handle_document)
-        except Exception as e:
-            processing_command = False
-            bot.reply_to(message, f"\033[31;1mОшибка: \033[0m{e}")
-    else:
-        processing_command = False
-        bot.send_message(
-            message.chat.id, "нет, ну ты блять ему говоришь 'СКИНЬ ТЫ, СУКА, ФОТО' а он блять берет и какую то поеботу кидает. \n иди нахуй короче, ебанат блядский")
-
-
-def handle_document(message: Message):
-    global processing_command
-
-    if message.caption and message.document:
-        file_id = message.document.file_id
-        file_info = bot.get_file(file_id)
-        downloaded_file = bot.download_file(file_info.file_path)
-        try:
-            with open(f"torrents/{message.caption}", 'wb') as new_file:
-                new_file.write(downloaded_file)
-            bot.reply_to(message, "Файл загружен!")
-        except Exception as e:
-            processing_command = False
-            bot.reply_to(message, f"\033[31;1mОшибка: \033[0m{e}")
-    else:
-        processing_command = False
-        bot.send_message(
-            message.chat.id, "нет, ну ты блять ему говоришь 'СКИНЬ ТЫ, СУКА, ФАЙЛ' а он блять берет и какую то поеботу кидает. \n иди нахуй короче, ебанат блядский")
-'''
-
-
-@bot.message_handler(commands=['parse'])
-def parse_handler(message):
     global processing_command
 
     if processing_command:
@@ -126,15 +77,15 @@ def parse_handler(message):
 
     processing_command = True
     bot.send_message(message.chat.id, 'Отправьте имя канала:')
-    bot.register_next_step_handler(message, parse_get_name)
+    bot.register_next_step_handler(message, get_name)
 
 
-def parse_get_name(message):
+def get_name(message):
     # Check for text
     if not message.text:
         bot.send_message(
             message.chat.id, "Пустое сообщение.\nОтправьте имя канала:")
-        bot.register_next_step_handler(message, parse_get_name)
+        bot.register_next_step_handler(message, get_name)
         return
 
     # Extract name and delete message
@@ -146,24 +97,24 @@ def parse_get_name(message):
             message.chat.id,
             "Неверый формат имени. Имя должно соответсвовать формату 'имя-канала'.\nОтправьте имя канала:"
         )
-        bot.register_next_step_handler(message, parse_get_name)
+        bot.register_next_step_handler(message, get_name)
         return
 
     bot.send_message(message.chat.id, "Отправьте описание канала:")
 
     info = {"channel_name": channel_name}
 
-    bot.register_next_step_handler(message, parse_get_caption, info)
+    bot.register_next_step_handler(message, get_caption, info)
 
 
-def parse_get_caption(message, info):
+def get_caption(message, info):
     # Check for text
     if not message.text:
         bot.send_message(
             message.chat.id,
             "Пустое сообщение.\nОтправьте описание канала:"
         )
-        bot.register_next_step_handler(message, parse_get_caption, info)
+        bot.register_next_step_handler(message, get_caption, info)
         return
 
     # Extract channel caption and delete message
@@ -172,17 +123,17 @@ def parse_get_caption(message, info):
 
     # Next step
     bot.send_message(message.chat.id, "Отправьте аватарку канала:")
-    bot.register_next_step_handler(message, parse_get_cover, info)
+    bot.register_next_step_handler(message, get_cover, info)
 
 
-def parse_get_cover(message, info):
+def get_cover(message, info):
     # Check for document
     if not message.document:
         bot.send_message(
             message.chat.id,
             "Сообщение не содержит файла.\nОтправьте аватарку канала:"
         )
-        bot.register_next_step_handler(message, parse_get_cover, info)
+        bot.register_next_step_handler(message, get_cover, info)
         return
 
     # Extract channel cover
@@ -196,13 +147,14 @@ def parse_get_cover(message, info):
     info["channel_cover_extension"] = file_extension
 
     # Next step
-    bot.send_message(message.chat.id, "Отправьте ссылку на канал источник:")
+    bot.send_message(
+        message.chat.id, "Отправьте ссылку на канал источник или торрент файл:")
 
     bot.register_next_step_handler(
-        message, parse_get_source_channel_link, info)
+        message, get_source_channel_link, info)
 
 
-def parse_get_source_channel_link(message, info):
+def get_source_channel_link(message, info):
     if message.text:
         # Extract channel link
         source_channel_link = message.text
@@ -231,9 +183,9 @@ def parse_get_source_channel_link(message, info):
     else:
         bot.send_message(
             message.chat.id,
-            "Пустое сообщение.\nОтправьте ссылку на канал-источник:"
+            "Пустое сообщение.\nОтправьте ссылку на канал-источник или торрент файл:"
         )
-        bot.register_next_step_handler(message, parse_get_source_channel_link,
+        bot.register_next_step_handler(message, get_source_channel_link,
                                        info)
         return
 
@@ -342,6 +294,10 @@ def parse(message, info):
 
 @bot.message_handler(commands=['format'])
 def format_handler(message):
+    if not (str(message.chat.id) in authorized_users):
+        bot.send_message(
+            message.chat.id, 'ага блять, иди нахуй сука падаль неавторизованная')
+        return
     global processing_command
 
     if processing_command:
@@ -379,7 +335,20 @@ def format(message):
 
 @bot.message_handler(content_types=['text'])
 def text(message: Message):
+    if not (str(message.chat.id) in authorized_users):
+        bot.send_message(
+            message.chat.id, 'ага блять, иди нахуй сука падаль неавторизованная')
+        return
+
     bot.send_message(message.chat.id, 'неизвестная команда :,(')
+
+
+def get_authorized_users():
+    global authorized_users
+
+    with open('authorized_users.json', 'r') as data:
+        penis = js.load(data)
+    authorized_users = penis
 
 
 def main():
@@ -388,6 +357,7 @@ def main():
     download_agent.start()
 
     print('генадий запущен')
+    get_authorized_users()
     bot.polling(non_stop=True, interval=1, timeout=60,
                 long_polling_timeout=60)
 

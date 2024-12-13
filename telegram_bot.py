@@ -131,7 +131,7 @@ def search(message: Message):
             for channel in channels:
                 text = 'найденые результаты'
                 but = telebot.types.InlineKeyboardButton(
-                    f'{channel.chanelname}',
+                    f'{channel.chanelname.replace('-', ' ')}',
                     callback_data=(f'file_page|{channel.id}')
                 )
                 keyboard.add(but)
@@ -156,12 +156,13 @@ def search(message: Message):
 def file_page(message, channel: db.Chanel):
     keyboard = telebot.types.InlineKeyboardMarkup(row_width=1)
 
-    text = f'название: {channel.chanelname}\n\nописание: {channel.caption}'
+    text = f'название: {channel.chanelname.replace(
+        '-', ' ')}\n\nописание: {channel.caption}'
     url = channel.invitelink
     file_id = channel.file_id
 
     but1 = telebot.types.InlineKeyboardButton(
-        f'смотреть: {channel.chanelname}',
+        f'смотреть: {channel.chanelname.replace('-', ' ')}',
         url=url
     )
 
@@ -256,7 +257,7 @@ def get_seved_channels(message, keyboard):
     for channel_id in penis[str(message.chat.id)]:
         chan = db.ChanelService().get_by_id(channel_id)
         but = telebot.types.InlineKeyboardButton(
-            chan.chanelname, callback_data=(f'file_page|{chan.id}')
+            chan.chanelname.replace('-', ' '), callback_data=(f'file_page|{chan.id}')
         )
         keyboard.add(but)
     but = telebot.types.InlineKeyboardButton(
