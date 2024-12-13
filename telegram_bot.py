@@ -4,6 +4,7 @@ from telebot.types import Message
 from search import search_link, lexemes
 import dbfile as db
 import json as js
+import asyncio as io
 
 TOKEN = "7905948999:AAG2Clgv7gNyAgqiXVSuKcJgjY86tqJX0lM"
 bot = telebot.TeleBot(TOKEN)
@@ -60,8 +61,10 @@ def callback(call):
 
     if call.data == 'random':
         channel = db.ChanelService().random_serial()
-        file_page(call.message, channel)
-        return
+        keyboard, file, text = file_page(call.message, channel)
+        but = telebot.types.InlineKeyboardButton(
+            'ещё рандомный сериал', callback_data='random')
+        keyboard.__dict__['keyboard'].insert(2, [but])
 
     if call.data == 'sav':
         text = 'сохраненные сериалы:'
@@ -77,17 +80,16 @@ def callback(call):
 
     if call.data.startswith('file_page'):
         channel = db.ChanelService().get_by_id(int(call.data.split('|')[-1]))
-        file_page(call.message, channel)
-        return
+        keyboard, file, text = file_page(call.message, channel)
 
     if call.data.startswith('save'):
         channel = db.ChanelService().get_by_id(int(call.data.split('|')[-1]))
-        save(call.message, channel.id)
+        io.run(save(call.message, channel.id))
         return
 
     if call.data.startswith('delete'):
         channel = db.ChanelService().get_by_id(int(call.data.split('|')[-1]))
-        delete(call.message, channel.id)
+        io.run(delete(call.message, channel.id))
         return
 
     media = types.InputMediaPhoto(file, caption=text)
@@ -180,6 +182,8 @@ def file_page(message, channel: db.Chanel):
     )
     keyboard.add(but1, but2, but3)
 
+    return keyboard, file_id, text
+
     media = types.InputMediaPhoto(file_id, caption=text)
     bot.edit_message_media(
         media=media,
@@ -198,7 +202,7 @@ def save_in_user(message, channel_id):
     return True if channel_id in penis[message] else False
 
 
-def save(message, channel_id):
+async def save(message, channel_id):
     with open('users_save.json', 'r') as data:
         penis = js.load(data)
     mes = str(message.chat.id)
@@ -217,7 +221,7 @@ def save(message, channel_id):
     update_button(bot, message, new_button, row=1, col=0)
 
 
-def delete(message, channel_id):
+async def delete(message, channel_id):
     with open('users_save.json', 'r') as data:
         penis = js.load(data)
 
