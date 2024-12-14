@@ -1,9 +1,7 @@
-from rename import rename
+from rename import rename_one_season, rename_many_seasons
 import os
-import asyncio
 import qbittorrent as qbt
 import time
-import asyncio as io
 
 FINISHED_TORRENTS_FILE_NAME = ".finished-torrents.txt"
 DOWNLOADS_DIR_NAME = "downloads"
@@ -23,7 +21,6 @@ def setup_working_directory() -> None:
     if not os.path.isfile(FINISHED_TORRENTS_FILE_NAME):
         finished_torrents_file = open(FINISHED_TORRENTS_FILE_NAME, "w")
         finished_torrents_file.close()
-
     if not os.path.isdir(DOWNLOADS_DIR_NAME):
         os.mkdir(DOWNLOADS_DIR_NAME)
 
@@ -55,6 +52,7 @@ def download_torrent(filepath: str, outdir: str) -> str:
     qbt_client.download_from_file(torrent_file, savepath=DOWNLOADS_DIR_NAME)
     torrent_file.close()
 
+    time.sleep(10)
     while True:
         torrents = qbt_client.torrents()
         assert len(torrents) == 1
@@ -98,7 +96,17 @@ async def download(massage) -> None:
         finished_torrents_list_file.write(torrent_file)
         finished_torrents_list_file.close()
     print("Все торренты из спика успешно загружены.")
+    os.system('rm -rf /home/ognev/Documents/pythonbot/torrents/*')
 
     while len(os.listdir('/home/ognev/Documents/pythonbot/files/')) != 0:
         pass
-    rename(massage)
+    for serial in os.listdir('/home/ognev/Downloads/downloads/'):
+        for i, j, s in os.walk(f'/home/ognev/Downloads/downloads/{serial}'):
+            if len(j) >= 0 and len(s) > 0:
+                await rename_one_season(massage)
+            elif len(j) > 0 and len(s) == 0:
+                await rename_many_seasons(massage)
+            else:
+                while True:
+                    pass
+        break

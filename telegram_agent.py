@@ -1,11 +1,11 @@
-from telethon.tl.functions.channels import InviteToChannelRequest, CreateChannelRequest, CheckUsernameRequest, UpdateUsernameRequest, DeleteChannelRequest
+from telethon.tl.functions.channels import InviteToChannelRequest, CreateChannelRequest, CheckUsernameRequest, UpdateUsernameRequest, DeleteChannelRequest, EditPhotoRequest
 from telethon.tl.functions.messages import ExportChatInviteRequest
+from telethon.types import MessageService
 from os import system, listdir
 import dbfile as db
 from telethon import TelegramClient
 from search import lexemes, induction
 import re
-
 db.create_tables()
 
 
@@ -27,6 +27,18 @@ async def create_channel(client, file_data):
         invite_link = await client(ExportChatInviteRequest(channel.id))
         db.ChanelService().update_inviteLink(
             invite_link.__dict__['link'], chanel.id)
+
+        for linkfile in listdir('photo'):
+            if file_data[0] in linkfile:
+                file = await client.upload_file(f'photo/{linkfile}')
+                await client(EditPhotoRequest(
+                    channel=channel.id, photo=file))
+                await client.send_file('GENA_AITISHNIK_BOT',
+                                       file,
+                                       force_document=False,
+                                       caption=str(chanel.id),
+                                       )
+                break
         # induction:
         lexemes_list = lexemes(chanel.chanelname)
         induction(lexemes_list, chanel.id)
@@ -78,4 +90,18 @@ async def send_all_files():
                                        )
                 system('rm -rf thumbnail.jpg')
         system(f'rm -rf /home/ognev/Documents/pythonbot/files/{channel_name}')
+    await client.disconnect()
+
+
+async def parse_chats(source_chat, channel_name):
+    client = await client_start()
+    channel = await create_channel(client, channel_name)
+    channel = await create_channel(client, channel_name)
+    penis = list()
+    async for message in client.iter_messages(source_chat):
+        penis.append(message)
+    for message in penis[::-1]:
+        if isinstance(message, MessageService):
+            continue
+        await client.send_message(channel.linkchanel, message)
     await client.disconnect()

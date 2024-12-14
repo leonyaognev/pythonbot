@@ -1,4 +1,5 @@
 import sqlite3
+import random
 
 DB_FILE_PATH = 'database/data.db'
 
@@ -10,7 +11,8 @@ def create_tables():
             id integer primary key,
             chanelname text unique,
             linkchanel integer,
-            invitelink text
+            invitelink text,
+            file_id text
             )
     '''
     con.execute(sql)
@@ -19,11 +21,12 @@ def create_tables():
 
 
 class Chanel:
-    def __init__(self, id, chanelname, linkchanel, invitelink):
+    def __init__(self, id, chanelname, linkchanel, invitelink, file_id):
         self.id = id
         self.chanelname = chanelname
         self.linkchanel = linkchanel
         self.invitelink = invitelink
+        self.file_id = file_id
 
 
 class ChanelService:
@@ -51,13 +54,13 @@ class ChanelService:
             return Chanel(*file_data)
         return None
 
-    def get_link_by_id(self, id):
-        SQL_SELECT = "SELECT invitelink FROM chanels WHERE id = ?"
+    def get_by_id(self, id):
+        SQL_SELECT = "SELECT * FROM chanels WHERE id = ?"
         con = sqlite3.connect(DB_FILE_PATH)
         query = con.execute(SQL_SELECT, [id])
         file_data = query.fetchone()
         if file_data:
-            return file_data[0]
+            return Chanel(*file_data)
         return None
 
     def update_link(self, id, channel_id):
@@ -73,3 +76,25 @@ class ChanelService:
         con = sqlite3.connect(DB_FILE_PATH)
         con.execute(SQL)
         con.commit()
+
+    def update_file_id(self, file_id, channel_id):
+        SQL = f"UPDATE chanels SET file_id = '{file_id}' WHERE id = {
+            channel_id}"
+        con = sqlite3.connect(DB_FILE_PATH)
+        con.execute(SQL)
+        con.commit()
+
+    def random_serial(self):
+        con = sqlite3.connect(DB_FILE_PATH)
+
+        qwery = con.execute("SELECT MIN(id), MAX(id) FROM chanels")
+        min_id, max_id = qwery.fetchone()
+
+        random_id = random.randint(min_id, max_id)
+
+        qwery = con.execute(
+            "SELECT * FROM chanels WHERE id = ?", (random_id,))
+        file_data = qwery.fetchone()
+        if file_data:
+            return Chanel(*file_data)
+        return None

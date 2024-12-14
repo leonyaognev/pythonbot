@@ -102,5 +102,5 @@ def search_link(lexems):
     result_id = sorted(result.items(), key=lambda item: item[1], reverse=True)
     result = []
     for id in [channel[0] for channel in (result_id[:5] if len(result_id) > 5 else result_id)]:
-        result.append(db.ChanelService().get_link_by_id(id))
+        result.append(db.ChanelService().get_by_id(id))
     return result
