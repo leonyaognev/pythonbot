@@ -12,7 +12,8 @@ def create_tables():
             chanelname text unique,
             linkchanel integer,
             invitelink text,
-            file_id text
+            file_id text,
+            caption text
             )
     '''
     con.execute(sql)
@@ -21,12 +22,13 @@ def create_tables():
 
 
 class Chanel:
-    def __init__(self, id, chanelname, linkchanel, invitelink, file_id):
+    def __init__(self, id, chanelname, linkchanel, invitelink, file_id, caption):
         self.id = id
         self.chanelname = chanelname
         self.linkchanel = linkchanel
         self.invitelink = invitelink
         self.file_id = file_id
+        self.caption = caption
 
 
 class ChanelService:
@@ -98,3 +100,10 @@ class ChanelService:
         if file_data:
             return Chanel(*file_data)
         return None
+
+    def update_caption(self, caption, channel_id):
+        SQL = f"UPDATE chanels SET caption = '{caption}' WHERE id = {
+            channel_id}"
+        con = sqlite3.connect(DB_FILE_PATH)
+        con.execute(SQL)
+        con.commit()

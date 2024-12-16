@@ -9,8 +9,16 @@ TOKEN = "7905948999:AAG2Clgv7gNyAgqiXVSuKcJgjY86tqJX0lM"
 bot = telebot.TeleBot(TOKEN)
 
 bot_last_message = {}
+content_types = ["text", "audio", "document", "sticker", "video",
+                 "video_note", "voice", "location", "contact",
+                 "new_chat_members", "left_chat_member", "new_chat_title",
+                 "new_chat_photo", "delete_chat_photo", "group_chat_created",
+                 "supergroup_chat_created", "channel_chat_created",
+                 "migrate_to_chat_id", "migrate_from_chat_id",
+                 "pinned_message", "web_app_data"]
 main_file = 'AgACAgIAAxkBAANIZ2XErhbG2zBAIssejtrqYSbazTUAAsXmMRs0rDBLNFHle7tDRJcBAAMCAAN5AAM2BA'
 search_file = 'AgACAgIAAxkBAANqZ2XWUEvuw5yXTttp7bva2Afkf7oAAgHsMRuM9ChLm_ioN8nH6L8BAAMCAAN4AAM2BA'
+donate_file = 'AgACAgIAAxkBAAOZZ2bh6C9r2ZwpZXpV0Juapy00oTsAAmXkMRudSTlLHeQ3exBc2rMBAAMCAAN5AAM2BA'
 
 
 @bot.message_handler(commands=['start'])
@@ -56,14 +64,12 @@ def callback(call):
         return
 
     if call.data == 'sav':
-        text = 'созраненные сериалы:'
-        but1 = telebot.types.InlineKeyboardButton(
-            'вернуться в главное меню', callback_data=('back')
-        )
-        keyboard.add(but1)
+        text = 'сохраненные сериалы:'
+        keyboard = get_seved_channels(call.message, keyboard)
 
     if call.data == 'donate':
         text = 'разраб сосет бебру и очень этим доволен, так что не надо кидать ему никаких денег, лучше помолитесь за него в церкви)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))'
+        file = donate_file
         but1 = telebot.types.InlineKeyboardButton(
             'вернуться в главное меню', callback_data=('back')
         )
@@ -116,17 +122,22 @@ def main_menu(call):
 
 def search(message: Message):
     keyboard = telebot.types.InlineKeyboardMarkup(row_width=1)
-    channels = search_link(lexemes(message.text.replace(' ', '-')))
-    if channels:
-        for channel in channels:
-            text = 'найденые результаты'
-            but = telebot.types.InlineKeyboardButton(
-                f'{channel.chanelname}',
-                callback_data=(f'file_page|{channel.id}')
-            )
-            keyboard.add(but)
+    if not message.text or len(message.text) > 64:
+        text = 'некорректное название искомого сериала'
+        bot.register_next_step_handler(message, search)
     else:
-        text = 'извните, ничего не найдено :,('
+        channels = search_link(lexemes(message.text.replace(' ', '-')))
+        if channels:
+            for channel in channels:
+                text = 'найденые результаты'
+                but = telebot.types.InlineKeyboardButton(
+                    f'{channel.chanelname}',
+                    callback_data=(f'file_page|{channel.id}')
+                )
+                keyboard.add(but)
+        else:
+            text = 'извните, ничего не найдено :,('
+            bot.register_next_step_handler(message, search)
     but1 = telebot.types.InlineKeyboardButton(
         'вернуться в главное меню', callback_data=('back')
     )
@@ -145,12 +156,12 @@ def search(message: Message):
 def file_page(message, channel: db.Chanel):
     keyboard = telebot.types.InlineKeyboardMarkup(row_width=1)
 
-    text = channel.chanelname
+    text = f'название: {channel.chanelname}\n\nописание: {channel.caption}'
     url = channel.invitelink
     file_id = channel.file_id
 
     but1 = telebot.types.InlineKeyboardButton(
-        text,
+        f'смотреть: {channel.chanelname}',
         url=url
     )
 
@@ -235,11 +246,41 @@ def update_button(bot, message, new_button, row, col):
         reply_markup=updated_markup)
 
 
+def get_seved_channels(message, keyboard):
+    with open('users_save.json', 'r') as data:
+        penis = js.load(data)
+
+    if not (str(message.chat.id) in penis):
+        print('penis')
+        penis[str(message.chat.id)] = list()
+    for channel_id in penis[str(message.chat.id)]:
+        chan = db.ChanelService().get_by_id(channel_id)
+        but = telebot.types.InlineKeyboardButton(
+            chan.chanelname, callback_data=(f'file_page|{chan.id}')
+        )
+        keyboard.add(but)
+    but = telebot.types.InlineKeyboardButton(
+        'вернуться в главное меню', callback_data=('back')
+    )
+    keyboard.add(but)
+    return keyboard
+
+
 @bot.message_handler(content_types=['photo'])
 def handle_photo(message):
-    photo = message.photo[-1]
-    file_id = photo.file_id
-    bot.send_message(message.chat.id, file_id)
+    if message.chat.id == 1747419175 and message.caption and message.photo:
+        photo = message.photo[-1]
+        file_id = photo.file_id
+        text = message.caption
+        db.ChanelService().update_file_id(file_id, int(text))
+        bot.delete_message(message.chat.id, message.id)
+    else:
+        bot.delete_message(message.chat.id, message.id)
+
+
+@bot.message_handler(content_types=content_types)
+def del_all_message(message):
+    bot.delete_message(message.chat.id, message.id)
 
 
 print('сервер запущен')

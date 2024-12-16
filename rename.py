@@ -73,7 +73,6 @@ async def rename_one_season(file_name):
     os.system("mv ~/Downloads/downloads/* ~/Documents/pythonbot/downloads/")
     seas = file_name.split()[0]
     file_name = file_name.split()[1]
-    print(file_name, seas)
     for serial in os.listdir('downloads'):
         serial = serial.replace('\\', '\\\\')
         for i in shielding:
@@ -106,7 +105,7 @@ async def rename_one_season(file_name):
                     seson} ~/Documents/pythonbot/downloads/{file_name}/{seas}'
             )
             for i, s in enumerate(natsorted(os.listdir(
-                f'downloads/{file_name}/{index+1}'))
+                f'downloads/{file_name}/{seas}'))
             ):
                 s = s.replace('\\', '\\\\')
                 for item in shielding:
@@ -114,14 +113,14 @@ async def rename_one_season(file_name):
                 extention = s.split('.')[-1]
                 os.system(
                     f'mv ~/Documents/pythonbot/downloads/{
-                        file_name}/{index+1}/{
+                        file_name}/{seas}/{
                         s} ~/Documents/pythonbot/downloads/{file_name}/{
-                        index+1}/{file_name}_{index+1}_{i+1}.{extention}')
+                        seas}/{file_name}_{seas}_{i+1}.{extention}')
                 convert_to_mp4(
                     f'/home/ognev/Documents/pythonbot/downloads/{file_name}/{
-                        index+1}/{file_name}_{index+1}_{i+1}.{extention}',
+                        seas}/{file_name}_{seas}_{i+1}.{extention}',
                     f'/home/ognev/Documents/pythonbot/downloads/{
-                        file_name}/{index+1}/{file_name}_{index+1}_{i+1}.mp4'
+                        file_name}/{seas}/{file_name}_{seas}_{i+1}.mp4'
                 )
     os.system("mv ~/Documents/pythonbot/downloads/*\
             ~/Documents/pythonbot/files/")

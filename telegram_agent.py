@@ -1,11 +1,13 @@
 from telethon.tl.functions.channels import InviteToChannelRequest, CreateChannelRequest, CheckUsernameRequest, UpdateUsernameRequest, DeleteChannelRequest, EditPhotoRequest
 from telethon.tl.functions.messages import ExportChatInviteRequest
 from telethon.types import MessageService
+from natsort import natsorted
 from os import system, listdir
 import dbfile as db
 from telethon import TelegramClient
 from search import lexemes, induction
-import re
+import json as js
+
 db.create_tables()
 
 
@@ -28,16 +30,30 @@ async def create_channel(client, file_data):
         db.ChanelService().update_inviteLink(
             invite_link.__dict__['link'], chanel.id)
 
+        with open('caption.json', 'r') as data:
+            penis = js.load(data)
+        print(penis)
+        db.ChanelService().update_caption(
+            penis[f'{chanel.chanelname}'], chanel.id)
+        del penis[f'{chanel.chanelname}']
+
+        with open('caption.json', 'w') as data:
+            js.dump(penis, data)
+
         for linkfile in listdir('photo'):
             if file_data[0] in linkfile:
                 file = await client.upload_file(f'photo/{linkfile}')
                 await client(EditPhotoRequest(
                     channel=channel.id, photo=file))
-                await client.send_file('GENA_AITISHNIK_BOT',
-                                       file,
-                                       force_document=False,
-                                       caption=str(chanel.id),
-                                       )
+                message = await client.send_file('me',
+                                                 file,
+                                                 force_document=False,
+                                                 caption=str(chanel.id),
+                                                 )
+                await client.forward_messages(
+                    entity='leognburs_bot',
+                    messages=message.id,
+                    from_peer='me')
                 break
         # induction:
         lexemes_list = lexemes(chanel.chanelname)
@@ -66,20 +82,15 @@ def caption(name):
     return name[0] + ' сезон: ' + name[1] + ' серия: ' + name[2]
 
 
-def extract_numbers(file_name):
-    match = re.search(r'_(\d+)_(\d+)', file_name)
-    return int(match.group(1)), int(match.group(2))
-
-
 async def send_all_files():
     client = await client_start()
     for channel_name in listdir('files'):
         channel = await create_channel(client, channel_name)
-        for sesons in range(len(listdir(f'files/{channel_name}'))):
-            for file in sorted(listdir(f'files/{channel_name}/{sesons+1}'), key=extract_numbers):
-                linkfile = f'files/{channel_name}/{sesons + 1}/{file}'
+        for sesons in natsorted(listdir(f'files/{channel_name}')):
+            for file in natsorted(listdir(f'files/{channel_name}/{sesons}')):
+                linkfile = f'files/{channel_name}/{sesons}/{file}'
                 system(
-                    f'ffmpeg -i {linkfile} -ss 00:00:01 -vframes 1 -s 320x240 thumbnail.jpg')
+                    f'ffmpeg -i {linkfile} -ss 00:00:01 -vframes 1 thumbnail.jpg')
                 await client.send_file(channel.linkchanel,
                                        linkfile,
                                        caption=caption(file),
@@ -95,13 +106,35 @@ async def send_all_files():
 
 async def parse_chats(source_chat, channel_name):
     client = await client_start()
-    channel = await create_channel(client, channel_name)
-    channel = await create_channel(client, channel_name)
     penis = list()
     async for message in client.iter_messages(source_chat):
         penis.append(message)
+    channel = await create_channel(client, channel_name)
     for message in penis[::-1]:
         if isinstance(message, MessageService):
             continue
         await client.send_message(channel.linkchanel, message)
     await client.disconnect()
+    return channel.id
+
+
+async def rename_parsed_messages(channel_id, seasons, *args):
+    series = (0, *args)
+    series = [int(i) for i in series]
+    print(channel_id, seasons, series)
+    client = await client_start()
+    channel = db.ChanelService().get_by_id(channel_id)
+    messages = list()
+    async for message in client.iter_messages(channel.linkchanel, reverse=True):
+        messages.append(message.id)
+    messages = messages[2:]
+
+    for seson in range(1, seasons+1):
+        for index, message in enumerate(messages[series[seson-1]:series[seson]]):
+            await client.edit_message(
+                channel.linkchanel,
+                message,
+                text=f'{channel.chanelname.replace("-", " ")} сезон: {seson} серия: {index+1}')
+
+    await client.disconnect()
+    return True
