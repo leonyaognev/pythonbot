@@ -6,6 +6,8 @@ import dbfile as db
 import json as js
 import asyncio as io
 
+import time
+
 TOKEN = "7905948999:AAG2Clgv7gNyAgqiXVSuKcJgjY86tqJX0lM"
 bot = telebot.TeleBot(TOKEN)
 
@@ -20,6 +22,7 @@ content_types = ["text", "audio", "document", "sticker", "video",
 main_file = 'AgACAgIAAxkBAANIZ2XErhbG2zBAIssejtrqYSbazTUAAsXmMRs0rDBLNFHle7tDRJcBAAMCAAN5AAM2BA'
 search_file = 'AgACAgIAAxkBAANqZ2XWUEvuw5yXTttp7bva2Afkf7oAAgHsMRuM9ChLm_ioN8nH6L8BAAMCAAN4AAM2BA'
 donate_file = 'AgACAgIAAxkBAAOZZ2bh6C9r2ZwpZXpV0Juapy00oTsAAmXkMRudSTlLHeQ3exBc2rMBAAMCAAN5AAM2BA'
+search_state = {}
 
 
 @bot.message_handler(commands=['start'])
@@ -44,20 +47,25 @@ def handle_start(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call):
+    global search_state
     bot_last_message[call.message.chat.id] = [call.message]
     keyboard = telebot.types.InlineKeyboardMarkup(row_width=1)
     file = main_file
+    search_state[str(call.message.chat.id)] = False
+
     if call.data == 'back':
         main_menu(call)
         return
     if call.data == 'search':
+        search_state[str(call.message.chat.id)] = True
         file = search_file
         text = 'введите название искомого сериала: '
         but1 = telebot.types.InlineKeyboardButton(
             'вернуться в главное меню', callback_data=('back')
         )
         keyboard.add(but1)
-        bot.register_next_step_handler(call.message, search)
+        bot.register_next_step_handler(
+            call.message, search)
 
     if call.data == 'random':
         channel = db.ChanelService().random_serial()
@@ -123,23 +131,30 @@ def main_menu(call):
 
 
 def search(message: Message):
+    if not search_state[str(message.chat.id)]:
+        bot.delete_message(message.chat.id, message.id)
+        return
+
     keyboard = telebot.types.InlineKeyboardMarkup(row_width=1)
-    if not message.text or len(message.text) > 64:
+    if not message.text or len(message.text) > 100:
         text = 'некорректное название искомого сериала'
-        bot.register_next_step_handler(message, search)
+        bot.register_next_step_handler(
+            message, search)
     else:
         channels = search_link(lexemes(message.text.replace(' ', '-')))
         if channels:
             for channel in channels:
                 text = 'найденые результаты'
                 but = telebot.types.InlineKeyboardButton(
-                    f'{channel.chanelname.replace('-', ' ')}',
+                    f'{channel.chanelname.replace("-", " ")}',
                     callback_data=(f'file_page|{channel.id}')
                 )
                 keyboard.add(but)
         else:
             text = 'извните, ничего не найдено :,('
-            bot.register_next_step_handler(message, search)
+            serch = True
+            bot.register_next_step_handler(
+                message, search)
     but1 = telebot.types.InlineKeyboardButton(
         'вернуться в главное меню', callback_data=('back')
     )
@@ -256,7 +271,6 @@ def get_seved_channels(message, keyboard):
         penis = js.load(data)
 
     if not (str(message.chat.id) in penis):
-        print('penis')
         penis[str(message.chat.id)] = list()
     for channel_id in penis[str(message.chat.id)]:
         chan = db.ChanelService().get_by_id(channel_id)

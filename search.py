@@ -3,6 +3,9 @@ import json as js
 import dbfile as db
 from translator import transenru
 
+import time
+import concurrent.futures
+
 
 class Porter:
     PERFECTIVEGROUND = re.compile(
@@ -24,54 +27,94 @@ class Porter:
     NN = re.compile(u"нн$")
 
     def stem(word):
-        word = word.lower()
-        word = word.replace(u'ё', u'е')
-        m = re.match(Porter.RVRE, word)
-        if m.groups():
-            pre = m.group(1)
-            rv = m.group(2)
-            temp = Porter.PERFECTIVEGROUND.sub('', rv, 1)
-            if temp == rv:
-                rv = Porter.REFLEXIVE.sub('', rv, 1)
-                temp = Porter.ADJECTIVE.sub('', rv, 1)
-                if temp != rv:
-                    rv = temp
-                    rv = Porter.PARTICIPLE.sub('', rv, 1)
-                else:
-                    temp = Porter.VERB.sub('', rv, 1)
-                    if temp == rv:
-                        rv = Porter.NOUN.sub('', rv, 1)
-                    else:
+        try:
+            word = word.lower()
+            word = word.replace(u'ё', u'е')
+            m = re.match(Porter.RVRE, word)
+            if m.groups():
+                pre = m.group(1)
+                rv = m.group(2)
+                temp = Porter.PERFECTIVEGROUND.sub('', rv, 1)
+                if temp == rv:
+                    rv = Porter.REFLEXIVE.sub('', rv, 1)
+                    temp = Porter.ADJECTIVE.sub('', rv, 1)
+                    if temp != rv:
                         rv = temp
-            else:
-                rv = temp
+                        rv = Porter.PARTICIPLE.sub('', rv, 1)
+                    else:
+                        temp = Porter.VERB.sub('', rv, 1)
+                        if temp == rv:
+                            rv = Porter.NOUN.sub('', rv, 1)
+                        else:
+                            rv = temp
+                else:
+                    rv = temp
 
-            rv = Porter.I.sub('', rv, 1)
+                rv = Porter.I.sub('', rv, 1)
 
-            if re.match(Porter.DERIVATIONAL, rv):
-                rv = Porter.DER.sub('', rv, 1)
+                if re.match(Porter.DERIVATIONAL, rv):
+                    rv = Porter.DER.sub('', rv, 1)
 
-            temp = Porter.P.sub('', rv, 1)
-            if temp == rv:
-                rv = Porter.SUPERLATIVE.sub('', rv, 1)
-                rv = Porter.NN.sub(u'н', rv, 1)
-            else:
-                rv = temp
-            word = pre+rv
-        return word
+                temp = Porter.P.sub('', rv, 1)
+                if temp == rv:
+                    rv = Porter.SUPERLATIVE.sub('', rv, 1)
+                    rv = Porter.NN.sub(u'н', rv, 1)
+                else:
+                    rv = temp
+                word = pre+rv
+            return word
+        except AttributeError:
+            return
     stem = staticmethod(stem)
+
+
+def levenshtein_distance(str1, str2):
+    m, n = len(str1), len(str2)
+    dp = [[0] * (n + 1) for _ in range(m + 1)]
+
+    # Заполнение базового случая
+    for i in range(m + 1):
+        dp[i][0] = i
+    for j in range(n + 1):
+        dp[0][j] = j
+
+    # Основной цикл
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            cost = 0 if str1[i - 1] == str2[j - 1] else 1
+            dp[i][j] = min(
+                dp[i - 1][j] + 1,      # Удаление
+                dp[i][j - 1] + 1,      # Вставка
+                dp[i - 1][j - 1] + cost  # Замена
+            )
+
+    return dp[m][n]
+
+
+def similarity_percentage(str1, str2):
+    # Расстояние Левенштейна
+    distance = levenshtein_distance(str1, str2)
+    # Длины строк
+    max_length = max(len(str1), len(str2))
+    if max_length == 0:  # Если обе строки пустые
+        return 100.0
+    # Процент схожести
+    similarity = (1 - distance / max_length) * 100
+    return round(similarity, 2)
 
 
 def lexemes(file_name):
     lexemes = list()
     file_name = file_name.split('-')
     for word in file_name:
-        word = transenru(word)
-        try:
-            lexemes.append(Porter.stem(u'' + word))
-        except:
-            continue
-    return lexemes
+        # word = transenru(word)
+        lexemes.append('' + word)
+
+    with concurrent.futures.ProcessPoolExecutor(max_workers=4) as executor:
+        results = list(executor.map(Porter.stem, lexemes))
+        results = [item for item in results if item is not None]
+
+    return results
 
 
 def induction(lexemes, channel_id):
@@ -92,9 +135,12 @@ def search_link(lexems):
     with open('data.json', 'r') as data:
         penis = js.load(data)
     channels_list = list()
+    keys = list(penis.keys())
+
     for lexem in lexems:
-        if lexem in penis:
-            channels_list += penis[lexem]
+        for key in keys:
+            if similarity_percentage(lexem, key) > 80:
+                channels_list += penis[key]
     result = {}
     for channel in set(channels_list):
         result[channel] = channels_list.count(channel)

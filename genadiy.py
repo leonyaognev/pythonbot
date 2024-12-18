@@ -92,7 +92,7 @@ def get_name(message):
     channel_name = message.text
 
     # Validate name format
-    if not re.match(r"^\w+(-\w+){1,}$", channel_name):
+    if not re.match(r"^\w+(-\w+){0,}$", channel_name):
         bot.send_message(
             message.chat.id,
             "Неверый формат имени. Имя должно соответсвовать формату 'имя-канала'.\nОтправьте имя канала:"
