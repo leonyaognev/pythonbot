@@ -117,6 +117,12 @@ def get_caption(message, info):
         bot.register_next_step_handler(message, get_caption, info)
         return
 
+    # Check len caption
+    if len(message.text) > 800:
+        bot.send_message(
+            message.chat.id,
+            "Ты ебанатище, подпис слишком длинная, давай че нить покороче")
+
     # Extract channel caption and delete message
     channel_caption = message.text
     info["channel_caption"] = channel_caption
@@ -227,7 +233,7 @@ def download_torrent(message, info):
         bot.send_message(message.chat.id, "Обложка загружена.")
 
         # Save torrent
-        if int(info['season']):
+        if int(info['seaso']):
             with open(f"torrents/{info['season']} {info['channel_name']}", 'wb') as new_file:
                 new_file.write(info['torrent_file'])
 
@@ -352,7 +358,7 @@ def get_authorized_users():
 
 
 def main():
-    print('downloader agent запущен')
+    print('downloader agenjjjjt запущен')
     download_agent = DownloadAgent()
     download_agent.start()
 

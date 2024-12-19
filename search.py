@@ -107,7 +107,6 @@ def lexemes(file_name):
     lexemes = list()
     file_name = file_name.split('-')
     for word in file_name:
-        # word = transenru(word)
         lexemes.append('' + word)
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=4) as executor:
