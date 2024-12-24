@@ -54,8 +54,8 @@ def callback(call):
     search_state[str(call.message.chat.id)] = False
 
     if call.data == 'back':
-        main_menu(call)
-        return
+        keyboard, file, text = main_menu(call)
+
     if call.data == 'search':
         search_state[str(call.message.chat.id)] = True
         file = search_file
@@ -121,13 +121,7 @@ def main_menu(call):
     but4 = telebot.types.InlineKeyboardButton(
         'донат)))', callback_data='donate')
     keyboard.add(but1, but2, but3, but4)
-    media = types.InputMediaPhoto(main_file, caption=text)
-    bot.edit_message_media(
-        media=media,
-        chat_id=call.message.chat.id,
-        message_id=call.message.id,
-        reply_markup=keyboard
-    )
+    return keyboard, main_file, text
 
 
 def search(message: Message):
@@ -152,7 +146,6 @@ def search(message: Message):
                 keyboard.add(but)
         else:
             text = 'извните, ничего не найдено :,('
-            serch = True
             bot.register_next_step_handler(
                 message, search)
     but1 = telebot.types.InlineKeyboardButton(
@@ -299,6 +292,29 @@ def handle_photo(message):
 
 @bot.message_handler(content_types=content_types)
 def del_all_message(message):
+    keyboard = telebot.types.InlineKeyboardMarkup(row_width=1)
+    but1 = telebot.types.InlineKeyboardButton(
+        'поиск по названию', callback_data='search')
+    but2 = telebot.types.InlineKeyboardButton(
+        'рандомный сериал', callback_data='random')
+    but3 = telebot.types.InlineKeyboardButton(
+        'избранные сериалы', callback_data='sav')
+    but4 = telebot.types.InlineKeyboardButton(
+        'донат)))', callback_data='donate')
+    keyboard.add(but1, but2, but3, but4)
+    for i in range(30):
+        try:
+            channel = db.ChanelService().get_by_id(i)
+            bot.send_photo(
+                caption=f"название: {
+                    channel.chanelname}\n\nописание: {channel.caption}",
+                chat_id=message.chat.id,
+                reply_markup=keyboard,
+                photo=channel.file_id)
+        except Exception as e:
+            if channel:
+                print(channel.id)
+            print(e)
     bot.delete_message(message.chat.id, message.id)
 
 

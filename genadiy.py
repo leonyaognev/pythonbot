@@ -364,8 +364,8 @@ def main():
 
     print('генадий запущен')
     get_authorized_users()
-    bot.polling(non_stop=True, interval=1, timeout=60,
-                long_polling_timeout=60)
+    bot.polling(non_stop=True, interval=1, timeout=9999999,
+                long_polling_timeout=9999999)
 
 
 if __name__ == "__main__":
